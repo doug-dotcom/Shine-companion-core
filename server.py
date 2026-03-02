@@ -180,3 +180,124 @@ User message:
     save_memory(user, data.message)
 
     return {"reply": reply}
+
+from fastapi.responses import HTMLResponse
+
+@app.get("/", response_class=HTMLResponse)
+def shine_ui():
+
+    return """
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>Shine Companion</title>
+
+<style>
+
+body{
+background:#0b1020;
+color:white;
+font-family:Arial;
+text-align:center;
+}
+
+#chat{
+width:650px;
+height:420px;
+border:1px solid #444;
+margin:auto;
+padding:15px;
+overflow-y:auto;
+border-radius:10px;
+}
+
+input{
+width:420px;
+padding:10px;
+border-radius:6px;
+border:none;
+}
+
+button{
+padding:10px;
+border:none;
+background:#4e7cff;
+color:white;
+border-radius:6px;
+cursor:pointer;
+}
+
+button:hover{
+background:#6a91ff;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>✨ Shine Companion</h1>
+
+<div id="chat"></div>
+
+<br>
+
+<input id="msg" placeholder="Ask Shine something"/>
+<button onclick="send()">Send</button>
+
+<script>
+
+let token=""
+
+async function login(){
+
+const res = await fetch("/login",{
+method:"POST",
+headers:{ "Content-Type":"application/json"},
+body:JSON.stringify({
+username:"doug",
+password:"shine"
+})
+})
+
+const data = await res.json()
+
+token=data.access_token
+
+}
+
+async function send(){
+
+const message=document.getElementById("msg").value
+
+const res=await fetch("/chat",{
+method:"POST",
+headers:{
+"Content-Type":"application/json",
+"Authorization":"Bearer "+token
+},
+body:JSON.stringify({
+message:message
+})
+})
+
+const data=await res.json()
+
+const chat=document.getElementById("chat")
+
+chat.innerHTML += "<p><b>You:</b> "+message+"</p>"
+chat.innerHTML += "<p><b>Shine:</b> "+data.reply+"</p>"
+
+document.getElementById("msg").value=""
+
+}
+
+login()
+
+</script>
+
+</body>
+</html>
+"""
