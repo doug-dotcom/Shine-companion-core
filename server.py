@@ -218,7 +218,7 @@ def root():
         "status": "Shine Companion Core Online",
         "version": "0.1",
         "time": datetime.utcnow()
-
+    }
 
 # ==============================
 # LOGIN
