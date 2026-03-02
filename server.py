@@ -390,3 +390,110 @@ login()
 </body>
 </html>
 """)
+
+@app.get("/")
+def ui():
+    return HTMLResponse("""
+<!DOCTYPE html>
+<html>
+<head>
+<title>Shine Companion</title>
+<style>
+body{
+background:#0f172a;
+color:white;
+font-family:Arial;
+display:flex;
+flex-direction:column;
+height:100vh;
+margin:0;
+}
+
+#chat{
+flex:1;
+overflow-y:auto;
+padding:20px;
+}
+
+input{
+width:80%;
+padding:10px;
+border-radius:6px;
+border:none;
+}
+
+button{
+padding:10px 20px;
+background:#6366f1;
+color:white;
+border:none;
+border-radius:6px;
+}
+
+#inputBar{
+display:flex;
+gap:10px;
+padding:20px;
+background:#020617;
+}
+</style>
+</head>
+
+<body>
+
+<div id="chat"></div>
+
+<div id="inputBar">
+<input id="msg" placeholder="Talk to Shine...">
+<button onclick="send()">Send</button>
+</div>
+
+<script>
+
+let token = ""
+
+async function login(){
+
+let form = new FormData()
+form.append("username","doug")
+form.append("password","shine")
+
+let res = await fetch("/login",{method:"POST",body:form})
+let data = await res.json()
+
+token = data.access_token
+
+}
+
+async function send(){
+
+let message = document.getElementById("msg").value
+
+let res = await fetch("/chat",{
+method:"POST",
+headers:{
+"Content-Type":"application/json",
+"Authorization":"Bearer "+token
+},
+body:JSON.stringify({message:message})
+})
+
+let data = await res.json()
+
+let chat = document.getElementById("chat")
+
+chat.innerHTML += "<p><b>You:</b> "+message+"</p>"
+chat.innerHTML += "<p><b>Shine:</b> "+data.reply+"</p>"
+
+document.getElementById("msg").value=""
+
+}
+
+login()
+
+</script>
+
+</body>
+</html>
+""")
+}
