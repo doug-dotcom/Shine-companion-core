@@ -194,28 +194,20 @@ class ChatRequest(BaseModel):
 # AUTH
 # ==============================
 
-def create_token(username):
-
+def create_token(username: str):
     payload = {
         "sub": username,
-        "exp": datetime.utcnow() + timedelta(hours=12)
-
-    token = jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+        "exp": datetime.utcnow() + timedelta(hours=12),
+    }
+    token = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALG)
     return token
-
-
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
-
     token = credentials.credentials
-
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
         return payload["sub"]
-
-    except:
+    except Exception:
         raise HTTPException(status_code=401, detail="Invalid token")
-
-
 # ==============================
 # ROOT (STATUS PAGE)
 # ==============================
@@ -616,5 +608,6 @@ def root_ui():
 @app.get("/ui", response_class=HTMLResponse)
 def ui_alias():
     return SHINE_UI_HTML
+
 
 
