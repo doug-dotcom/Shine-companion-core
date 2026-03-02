@@ -200,7 +200,8 @@ def create_token(username):
         "sub": username,
         "exp": datetime.utcnow() + timedelta(hours=12)
 
-    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALG)
+    token = jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+    return token
 
 
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
@@ -615,4 +616,5 @@ def root_ui():
 @app.get("/ui", response_class=HTMLResponse)
 def ui_alias():
     return SHINE_UI_HTML
+
 
