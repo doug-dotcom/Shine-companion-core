@@ -301,3 +301,92 @@ login()
 </body>
 </html>
 """
+@app.get("/")
+def shine_ui():
+    return HTMLResponse("""
+<!DOCTYPE html>
+<html>
+<head>
+<title>Shine Companion</title>
+<style>
+body {
+    background:#0b0f1a;
+    color:white;
+    font-family:Arial;
+    text-align:center;
+    padding:40px;
+}
+#chat {
+    width:80%;
+    height:400px;
+    border:1px solid #333;
+    margin:auto;
+    overflow-y:auto;
+    padding:10px;
+}
+input {
+    width:60%;
+    padding:10px;
+}
+button {
+    padding:10px 20px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>✨ Shine Companion</h1>
+
+<div id="chat"></div>
+
+<br>
+
+<input id="msg" placeholder="Talk to Shine..."/>
+<button onclick="send()">Send</button>
+
+<script>
+
+let token = ""
+
+async function login(){
+    let form = new FormData()
+    form.append("username","doug")
+    form.append("password","shine")
+
+    let res = await fetch("/login",{method:"POST",body:form})
+    let data = await res.json()
+
+    token = data.access_token
+}
+
+async function send(){
+
+    let message = document.getElementById("msg").value
+
+    let res = await fetch("/chat",{
+        method:"POST",
+        headers:{
+            "Content-Type":"application/json",
+            "Authorization":"Bearer "+token
+        },
+        body:JSON.stringify({message:message})
+    })
+
+    let data = await res.json()
+
+    let chat = document.getElementById("chat")
+
+    chat.innerHTML += "<p><b>You:</b> "+message+"</p>"
+    chat.innerHTML += "<p><b>Shine:</b> "+data.reply+"</p>"
+
+    document.getElementById("msg").value=""
+}
+
+login()
+
+</script>
+
+</body>
+</html>
+""")
