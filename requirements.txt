@@ -1,7 +1,6 @@
 fastapi
 uvicorn
-python-jose
-pydantic
-sqlite-utils
 openai
+pydantic
 python-multipart
+pyjwt
