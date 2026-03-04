@@ -1,7 +1,3 @@
-# =========================
-# Shine Companion MSP
-# =========================
-
 import os
 import json
 import sqlite3
@@ -16,26 +12,24 @@ from pydantic import BaseModel
 from openai import OpenAI
 
 
-# =========================
+# ==============================
 # CONFIG
-# =========================
+# ==============================
 
 JWT_SECRET = os.getenv("JWT_SECRET", "shine-secret")
 JWT_ALG = "HS256"
 DB_PATH = "memory.db"
 
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-
-client = OpenAI(api_key=OPENAI_API_KEY)
+client = OpenAI()
 
 app = FastAPI(title="Shine Companion")
 
 security = HTTPBearer()
 
 
-# =========================
+# ==============================
 # LOAD USERS
-# =========================
+# ==============================
 
 def load_users():
     with open("users.json") as f:
@@ -44,11 +38,12 @@ def load_users():
 USERS = load_users()
 
 
-# =========================
+# ==============================
 # DATABASE
-# =========================
+# ==============================
 
 def init_db():
+
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
 
@@ -67,9 +62,9 @@ def init_db():
 init_db()
 
 
-# =========================
+# ==============================
 # MODELS
-# =========================
+# ==============================
 
 class LoginRequest(BaseModel):
     username: str
@@ -80,9 +75,9 @@ class ChatRequest(BaseModel):
     message: str
 
 
-# =========================
+# ==============================
 # AUTH
-# =========================
+# ==============================
 
 def create_token(username: str):
 
@@ -106,9 +101,9 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
         raise HTTPException(status_code=401, detail="Invalid token")
 
 
-# =========================
+# ==============================
 # LOGIN
-# =========================
+# ==============================
 
 @app.post("/login")
 def login(data: LoginRequest):
@@ -126,9 +121,9 @@ def login(data: LoginRequest):
     return {"access_token": token}
 
 
-# =========================
+# ==============================
 # MEMORY
-# =========================
+# ==============================
 
 def save_memory(user, content):
 
@@ -161,15 +156,14 @@ def get_memory(user):
     return [r[0] for r in rows]
 
 
-# =========================
+# ==============================
 # CHAT
-# =========================
+# ==============================
 
 @app.post("/chat")
 def chat(data: ChatRequest, user=Depends(verify_token)):
 
     memories = get_memory(user)
-
     context = "\n".join(memories)
 
     prompt = f"""
@@ -180,30 +174,40 @@ User message:
 {data.message}
 """
 
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": "You are Shine Companion."},
-            {"role": "user", "content": prompt}
-        ]
-    )
+    try:
 
-    reply = response.choices[0].message.content
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are Shine Companion."},
+                {"role": "user", "content": prompt}
+            ]
+        )
+
+        reply = response.choices[0].message.content
+
+        if not reply:
+            reply = "AI responded but returned empty text."
+
+    except Exception as e:
+
+        reply = f"AI error: {str(e)}"
 
     save_memory(user, data.message)
 
     return {"reply": reply}
 
 
-# =========================
+# ==============================
 # UI
-# =========================
+# ==============================
 
-SHINE_UI_HTML = """
+UI = """
 <!DOCTYPE html>
 <html>
 <head>
 <title>Shine Companion</title>
+
 <style>
 
 body{
@@ -308,7 +312,7 @@ const data=await res.json()
 let chat=document.getElementById("chat")
 
 chat.innerHTML += "<p><b>You:</b> "+message+"</p>"
-chat.innerHTML += "<p><b>Shine:</b> "+data.reply+"</p>"
+chat.innerHTML += "<p><b>Shine:</b> "+(data.reply || "No response")+"</p>"
 
 document.getElementById("msg").value=""
 
@@ -323,4 +327,4 @@ document.getElementById("msg").value=""
 
 @app.get("/", response_class=HTMLResponse)
 def ui():
-    return SHINE_UI_HTML
+    return UI
