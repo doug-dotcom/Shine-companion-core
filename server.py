@@ -544,6 +544,11 @@ background:#020617;
 
 <body>
 
+<div id="loginBox">
+  <input id="u" placeholder="Username">
+  <input id="p" type="password" placeholder="Password">
+  <button onclick="login()">Login</button>
+</div>
 <div id="chat"></div>
 
 <div id="inputBar">
@@ -558,13 +563,13 @@ let token = ""
 async function login(){
 
 let form = new FormData()
-form.append("username","doug")
-form.append("password","shine")
+form.append("username", document.getElementById("u").value)
+form.append("password", document.getElementById("p").value)
 
 let res = await fetch("/login",{method:"POST",body:form})
 let data = await res.json()
 
-token = data.access_token
+token = data.token
 
 
 async function send(){
