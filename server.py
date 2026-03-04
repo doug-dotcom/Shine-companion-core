@@ -28,6 +28,20 @@ security = HTTPBearer()
 
 
 # ==============================
+# SHINE PERSONALITY
+# ==============================
+
+PERSONALITY = """
+You are Shine Companion.
+
+You are calm, intelligent, supportive, and grounded.
+You help the user think clearly and solve problems.
+You remember context from previous conversations when useful.
+You respond naturally and conversationally.
+"""
+
+
+# ==============================
 # LOAD USERS
 # ==============================
 
@@ -145,7 +159,7 @@ def get_memory(user):
     c = conn.cursor()
 
     c.execute(
-        "SELECT content FROM memory WHERE user=? ORDER BY id DESC LIMIT 5",
+        "SELECT content FROM memory WHERE user=? ORDER BY id DESC LIMIT 8",
         (user,)
     )
 
@@ -164,10 +178,11 @@ def get_memory(user):
 def chat(data: ChatRequest, user=Depends(verify_token)):
 
     memories = get_memory(user)
+
     context = "\n".join(memories)
 
     prompt = f"""
-User memory:
+Previous conversation:
 {context}
 
 User message:
@@ -179,7 +194,7 @@ User message:
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "You are Shine Companion."},
+                {"role": "system", "content": PERSONALITY},
                 {"role": "user", "content": prompt}
             ]
         )
@@ -193,7 +208,9 @@ User message:
 
         reply = f"AI error: {str(e)}"
 
-    save_memory(user, data.message)
+    # Save both sides of conversation
+    save_memory(user, "User: " + data.message)
+    save_memory(user, "Shine: " + reply)
 
     return {"reply": reply}
 
@@ -286,13 +303,23 @@ password:document.getElementById("p").value
 
 const data = await res.json()
 
-token=data.access_token
+let chat=document.getElementById("chat")
 
-document.getElementById("chat").innerHTML += "<p><b>Shine:</b> Logged in.</p>"
+if(data.access_token){
+token=data.access_token
+chat.innerHTML += "<p><b>Shine:</b> Logged in.</p>"
+}else{
+chat.innerHTML += "<p><b>Shine:</b> Login failed.</p>"
+}
 
 }
 
 async function send(){
+
+if(!token){
+alert("Please login first")
+return
+}
 
 let message=document.getElementById("msg").value
 
@@ -316,7 +343,16 @@ chat.innerHTML += "<p><b>Shine:</b> "+(data.reply || "No response")+"</p>"
 
 document.getElementById("msg").value=""
 
+chat.scrollTop = chat.scrollHeight
+
 }
+
+document.getElementById("msg")
+.addEventListener("keypress", function(e){
+if(e.key==="Enter"){
+send()
+}
+})
 
 </script>
 
