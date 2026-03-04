@@ -16,29 +16,16 @@ from openai import OpenAI
 # CONFIG
 # ==============================
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 JWT_SECRET = os.getenv("JWT_SECRET", "shine-secret")
 JWT_ALG = "HS256"
-DB_PATH = "memory.db"
+DB_PATH = os.getenv("DB_PATH", os.path.join(BASE_DIR, "memory.db"))
+USERS_PATH = os.getenv("USERS_PATH", os.path.join(BASE_DIR, "users.json"))
 
-client = OpenAI()
-
+client = OpenAI()  # expects OPENAI_API_KEY env var on Railway
 app = FastAPI(title="Shine Companion")
-
 security = HTTPBearer()
-
-
-# ==============================
-# SHINE PERSONALITY
-# ==============================
-
-PERSONALITY = """
-You are Shine Companion.
-
-You are calm, intelligent, supportive, and grounded.
-You help the user think clearly and solve problems.
-You remember context from previous conversations when useful.
-You respond naturally and conversationally.
-"""
 
 
 # ==============================
@@ -46,8 +33,16 @@ You respond naturally and conversationally.
 # ==============================
 
 def load_users():
-    with open("users.json") as f:
-        return json.load(f)
+    try:
+        with open(USERS_PATH, "r", encoding="utf-8") as f:
+            raw = json.load(f)
+        # ✅ normalize keys so "Doug" and "doug" both work
+        return {str(k).lower(): str(v) for k, v in raw.items()}
+    except FileNotFoundError:
+        # Clear error so Railway logs show it immediately
+        raise RuntimeError(f"users.json not found at: {USERS_PATH}")
+    except Exception as e:
+        raise RuntimeError(f"Failed to load users.json: {e}")
 
 USERS = load_users()
 
@@ -57,7 +52,6 @@ USERS = load_users()
 # ==============================
 
 def init_db():
-
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
 
@@ -84,7 +78,6 @@ class LoginRequest(BaseModel):
     username: str
     password: str
 
-
 class ChatRequest(BaseModel):
     message: str
 
@@ -94,23 +87,17 @@ class ChatRequest(BaseModel):
 # ==============================
 
 def create_token(username: str):
-
     payload = {
         "sub": username,
         "exp": datetime.utcnow() + timedelta(hours=12)
     }
-
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALG)
 
-
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
-
     token = credentials.credentials
-
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
         return payload["sub"]
-
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid token")
 
@@ -121,17 +108,19 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
 
 @app.post("/login")
 def login(data: LoginRequest):
+    username = (data.username or "").strip().lower()
+    password = data.password or ""
 
-    username = data.username.lower()
+    if not username:
+        raise HTTPException(status_code=400, detail="Missing username")
 
     if username not in USERS:
         raise HTTPException(status_code=401, detail="Invalid user")
 
-    if USERS[username] != data.password:
+    if USERS[username] != password:
         raise HTTPException(status_code=401, detail="Invalid password")
 
     token = create_token(username)
-
     return {"access_token": token}
 
 
@@ -140,33 +129,24 @@ def login(data: LoginRequest):
 # ==============================
 
 def save_memory(user, content):
-
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-
     c.execute(
         "INSERT INTO memory (user, content, created_at) VALUES (?, ?, ?)",
         (user, content, datetime.utcnow().isoformat())
     )
-
     conn.commit()
     conn.close()
 
-
 def get_memory(user):
-
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-
     c.execute(
-        "SELECT content FROM memory WHERE user=? ORDER BY id DESC LIMIT 8",
+        "SELECT content FROM memory WHERE user=? ORDER BY id DESC LIMIT 5",
         (user,)
     )
-
     rows = c.fetchall()
-
     conn.close()
-
     return [r[0] for r in rows]
 
 
@@ -176,41 +156,35 @@ def get_memory(user):
 
 @app.post("/chat")
 def chat(data: ChatRequest, user=Depends(verify_token)):
+    message = (data.message or "").strip()
+    if not message:
+        return {"reply": "Say something and hit send 🙂"}
 
     memories = get_memory(user)
-
     context = "\n".join(memories)
 
     prompt = f"""
-Previous conversation:
+User memory:
 {context}
 
 User message:
-{data.message}
+{message}
 """
 
     try:
-
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": PERSONALITY},
+                {"role": "system", "content": "You are Shine Companion."},
                 {"role": "user", "content": prompt}
             ]
         )
-
-        reply = response.choices[0].message.content
-
-        if not reply:
-            reply = "AI responded but returned empty text."
-
+        reply = response.choices[0].message.content or "AI responded but returned empty text."
     except Exception as e:
-
         reply = f"AI error: {str(e)}"
 
-    # Save both sides of conversation
-    save_memory(user, "User: " + data.message)
-    save_memory(user, "Shine: " + reply)
+    # save the user message (simple v1)
+    save_memory(user, message)
 
     return {"reply": reply}
 
@@ -224,142 +198,118 @@ UI = """
 <html>
 <head>
 <title>Shine Companion</title>
-
 <style>
-
 body{
-background:#0f172a;
-color:white;
-font-family:Arial;
-display:flex;
-flex-direction:column;
-height:100vh;
-margin:0;
+  background:#0f172a;
+  color:white;
+  font-family:Arial;
+  display:flex;
+  flex-direction:column;
+  height:100vh;
+  margin:0;
 }
-
-#loginBox{
-padding:20px;
-}
-
-#chat{
-flex:1;
-overflow-y:auto;
-padding:20px;
-}
-
-#inputBar{
-display:flex;
-gap:10px;
-padding:20px;
-background:#020617;
-}
-
-input{
-padding:10px;
-border-radius:6px;
-border:none;
-}
-
-button{
-padding:10px 20px;
-background:#6366f1;
-color:white;
-border:none;
-border-radius:6px;
-}
-
+#loginBox{ padding:20px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+#chat{ flex:1; overflow-y:auto; padding:20px; }
+#inputBar{ display:flex; gap:10px; padding:20px; background:#020617; }
+input{ padding:10px; border-radius:6px; border:none; }
+button{ padding:10px 20px; background:#6366f1; color:white; border:none; border-radius:6px; cursor:pointer; }
+.small{ opacity:.8; font-size:13px; }
 </style>
 </head>
 
 <body>
-
 <div id="loginBox">
-<input id="u" placeholder="Username">
-<input id="p" type="password" placeholder="Password">
-<button onclick="login()">Login</button>
+  <input id="u" placeholder="Username" autocomplete="username">
+  <input id="p" type="password" placeholder="Password" autocomplete="current-password">
+  <button onclick="login()">Login</button>
+  <span id="status" class="small"></span>
 </div>
 
 <div id="chat"></div>
 
 <div id="inputBar">
-<input id="msg" placeholder="Talk to Shine...">
-<button onclick="send()">Send</button>
+  <input id="msg" placeholder="Talk to Shine..." style="flex:1">
+  <button onclick="send()">Send</button>
 </div>
 
 <script>
+let token = "";
 
-let token = ""
-
-async function login(){
-
-const res = await fetch("/login",{
-method:"POST",
-headers:{ "Content-Type":"application/json"},
-body:JSON.stringify({
-username:document.getElementById("u").value,
-password:document.getElementById("p").value
-})
-})
-
-const data = await res.json()
-
-let chat=document.getElementById("chat")
-
-if(data.access_token){
-token=data.access_token
-chat.innerHTML += "<p><b>Shine:</b> Logged in.</p>"
-}else{
-chat.innerHTML += "<p><b>Shine:</b> Login failed.</p>"
+function addLine(who, text){
+  const chat = document.getElementById("chat");
+  chat.innerHTML += `<p><b>${who}:</b> ${text}</p>`;
+  chat.scrollTop = chat.scrollHeight;
 }
 
+document.getElementById("msg").addEventListener("keydown", (e) => {
+  if(e.key === "Enter") send();
+});
+
+async function login(){
+  const status = document.getElementById("status");
+  status.textContent = "Logging in...";
+
+  const username = document.getElementById("u").value;
+  const password = document.getElementById("p").value;
+
+  const res = await fetch("/login",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json"},
+    body: JSON.stringify({ username, password })
+  });
+
+  let data = null;
+  try { data = await res.json(); } catch(e) {}
+
+  if(!res.ok){
+    const detail = (data && (data.detail || data.message)) ? (data.detail || data.message) : ("HTTP " + res.status);
+    status.textContent = "❌ " + detail;
+    addLine("Shine", "Login failed: " + detail);
+    return;
+  }
+
+  token = data.access_token;
+  status.textContent = "✅ Logged in";
+  addLine("Shine", "Logged in. Say something.");
 }
 
 async function send(){
+  const msgEl = document.getElementById("msg");
+  const message = msgEl.value.trim();
+  if(!message) return;
 
-if(!token){
-alert("Please login first")
-return
+  if(!token){
+    addLine("Shine", "Login first 🙂");
+    return;
+  }
+
+  addLine("You", message);
+  msgEl.value = "";
+
+  const res = await fetch("/chat",{
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json",
+      "Authorization":"Bearer " + token
+    },
+    body: JSON.stringify({ message })
+  });
+
+  let data = null;
+  try { data = await res.json(); } catch(e) {}
+
+  if(!res.ok){
+    const detail = (data && (data.detail || data.message)) ? (data.detail || data.message) : ("HTTP " + res.status);
+    addLine("Shine", "Error: " + detail);
+    return;
+  }
+
+  addLine("Shine", (data.reply || "No response"));
 }
-
-let message=document.getElementById("msg").value
-
-const res=await fetch("/chat",{
-method:"POST",
-headers:{
-"Content-Type":"application/json",
-"Authorization":"Bearer "+token
-},
-body:JSON.stringify({
-message:message
-})
-})
-
-const data=await res.json()
-
-let chat=document.getElementById("chat")
-
-chat.innerHTML += "<p><b>You:</b> "+message+"</p>"
-chat.innerHTML += "<p><b>Shine:</b> "+(data.reply || "No response")+"</p>"
-
-document.getElementById("msg").value=""
-
-chat.scrollTop = chat.scrollHeight
-
-}
-
-document.getElementById("msg")
-.addEventListener("keypress", function(e){
-if(e.key==="Enter"){
-send()
-}
-})
-
 </script>
-
 </body>
 </html>
 """
-
 
 @app.get("/", response_class=HTMLResponse)
 def ui():
