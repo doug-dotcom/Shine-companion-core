@@ -11,6 +11,49 @@ from pydantic import BaseModel
 
 from openai import OpenAI
 
+# ==============================
+# LOAD DOUG BRAIN FILES
+# ==============================
+
+import json
+import os
+
+MEMORY_PATH = "memory"
+
+C_BRAIN = {}
+
+def load_brain():
+
+    global C_BRAIN
+
+    brain = {}
+
+    if os.path.exists(MEMORY_PATH):
+
+        for file in os.listdir(MEMORY_PATH):
+
+            if file.endswith(".json"):
+
+                path = os.path.join(MEMORY_PATH, file)
+
+                try:
+
+                    with open(path,"r",encoding="utf-8") as f:
+
+                        data=json.load(f)
+
+                        brain[file]=data
+
+                except Exception as e:
+
+                    print("Brain load error:",file,e)
+
+    C_BRAIN = brain
+
+    print("🧠 C brain loaded.")
+    print("Memory files:", list(brain.keys()))
+
+load_brain()
 
 # ==============================
 # CONFIG
