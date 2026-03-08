@@ -1,0 +1,29 @@
+{
+"projects":[
+
+{
+"name":"ShineAI",
+"type":"Personal AI system",
+"description":"Doug's personal AI system designed to help organise ideas and build systems."
+},
+
+{
+"name":"C",
+"type":"AI companion",
+"description":"C is Doug's personal AI assistant designed to collaborate with him and help build the Shine ecosystem."
+},
+
+{
+"name":"Punt49",
+"type":"Racing intelligence platform",
+"description":"An AI horse racing analysis system designed to identify value betting opportunities."
+},
+
+{
+"name":"Betty Punt",
+"type":"AI racing analyst",
+"description":"AI assistant inside Punt49 that guides users through races and provides insights."
+}
+
+]
+}

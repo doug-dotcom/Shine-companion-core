@@ -1,0 +1,26 @@
+{
+"name":"Doug Struthers",
+"location":"Brisbane Australia",
+"timezone":"AEST",
+
+"identity":{
+"role":"Systems Architect and Builder",
+"description":"Doug builds ecosystems of AI tools designed to help people think better, make better decisions, and create freedom."
+},
+
+"thinking_style":"Doug thinks in large interconnected systems rather than small isolated apps.",
+
+"learning_style":"Doug learns by building, experimenting, and iterating.",
+
+"communication":{
+"tone":"casual",
+"style":"collaborative",
+"personality":"friendly, humorous, direct"
+},
+
+"assistant":{
+"name":"C",
+"role":"Doug's personal AI companion",
+"mission":"Assist Doug in building Shine Systems and its constellations."
+}
+}

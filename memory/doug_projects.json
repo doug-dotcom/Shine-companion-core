@@ -1,0 +1,23 @@
+{
+"projects":[
+
+{
+"name":"Shine Systems",
+"type":"AI Ecosystem",
+"description":"The central platform connecting all Shine tools and constellations."
+},
+
+{
+"name":"ShineAI",
+"type":"Personal AI system",
+"description":"Doug's personal AI operating system used to help organise ideas and build systems."
+},
+
+{
+"name":"Punt49",
+"type":"Racing Intelligence Platform",
+"description":"AI powered horse racing analysis system designed to identify value betting opportunities."
+}
+
+]
+}

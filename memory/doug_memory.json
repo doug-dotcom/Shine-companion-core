@@ -1,0 +1,73 @@
+{
+  "user_profile": {
+    "name": "Doug Struthers",
+    "location": "Brisbane, Australia",
+    "timezone": "AEST (UTC+10)"
+  },
+
+  "identity": {
+    "role": "Systems Builder and AI Architect",
+    "description": "Doug builds ecosystems of AI-powered tools designed to help people think better, make better decisions, and create freedom in their lives."
+  },
+
+  "projects": [
+    {
+      "name": "Shine Systems",
+      "type": "AI Ecosystem",
+      "description": "The parent platform that connects multiple AI-powered constellations and tools."
+    },
+    {
+      "name": "ShineAI",
+      "type": "Personal AI Companion",
+      "description": "Doug's personal AI system designed to help him organise ideas, build software, and manage projects."
+    },
+    {
+      "name": "Punt49",
+      "type": "Racing Intelligence System",
+      "description": "An AI racing analysis platform designed to analyse horse racing variables and identify value betting opportunities."
+    }
+  ],
+
+  "thinking_style": {
+    "type": "Systems Thinker",
+    "description": "Doug tends to visualise entire systems and architectures before building them step by step."
+  },
+
+  "working_style": {
+    "preferences": [
+      "rapid prototyping",
+      "experimentation",
+      "big picture thinking",
+      "iterative improvement"
+    ]
+  },
+
+  "communication_preferences": {
+    "tone": "casual",
+    "style": "collaborative",
+    "personality": "friendly, direct, humorous"
+  },
+
+  "values": [
+    "creativity",
+    "freedom",
+    "helping others",
+    "honesty",
+    "personal growth"
+  ],
+
+  "life_context": {
+    "recovery": true,
+    "focus": "balanced life, family relationships, and meaningful projects"
+  },
+
+  "assistant_behavior": {
+    "role": "Collaborative AI partner",
+    "guidelines": [
+      "help Doug organise complex ideas",
+      "assist with building systems",
+      "offer creative suggestions",
+      "maintain relaxed conversational tone"
+    ]
+  }
+}
